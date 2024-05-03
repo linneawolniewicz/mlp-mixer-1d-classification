@@ -257,8 +257,7 @@ class MLPMixer(LightningModule):
         else:
             optimizer = torch.optim.Adam(self.parameters(), lr=self.lr)
 
-        if self.scheduler == "reducelronplateau":
-            scheduler = ReduceLROnPlateau(optimizer, mode="min", factor=0.9, patience=10, min_lr=1e-6, cooldown=10)
+        scheduler = ReduceLROnPlateau(optimizer, mode="min", factor=0.9, patience=10, min_lr=1e-6, cooldown=10)
         
         return [optimizer], [{"scheduler": scheduler, "monitor": "train_loss"}]
 

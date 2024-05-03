@@ -6,7 +6,7 @@
 #SBATCH --account=koa
 ##SBATCH --nodelist=gpu-0008
 
-#BATCH --gres=gpu:1
+#SBATCH --gres=gpu:1
 #SBATCH --cpus-per-task=8
 #SBATCH --mem=96gb ## max amount of memory per node you require
 #SBATCH --time=14-00:00:00 ## time format is DD-HH:MM:SS, 3day max on kill-shared, 7day max on exclusive-long, 14day max on sadow, 30day max on koa
@@ -19,7 +19,7 @@
 
 # Load python profile, then call python script passing SLURM_ARRAY_TASK_ID as an argument.
 source ~/profiles/auto.profile
-source activate mag_diff
+source activate pytorch
 
 # use this command to run a python script
 # python fno_1d_classification.py 
@@ -29,4 +29,4 @@ source activate mag_diff
 
 # Another command to create a .py script, then run that from a ipynb:
 # jupyter nbconvert fno_1d_classification.ipynb --to python
-python optuna.py
+python hyperparameter_tuning.py

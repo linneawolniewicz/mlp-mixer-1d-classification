@@ -3,6 +3,7 @@ import data_utils
 importlib.reload(data_utils)
 from data_utils import PhonemeDataset
 from mlp_mixer import MLPMixer
+from functools import partial
 
 import optuna
 import numpy as np
@@ -19,8 +20,8 @@ torch.autograd.set_detect_anomaly(True)
 def get_data(batch_size=32, transform=None):
     train_loader = DataLoader(
         PhonemeDataset(
-            data_filename='Data/Phoneme/train_X.npy',
-            label_filename='Data/Phoneme/train_y.npy',
+            data_filename='../Data/Phoneme/train_X.npy',
+            label_filename='../Data/Phoneme/train_y.npy',
             transform=transform
         ), 
         batch_size=batch_size, 
@@ -29,8 +30,8 @@ def get_data(batch_size=32, transform=None):
 
     val_loader = DataLoader(
         PhonemeDataset(
-            data_filename='Data/Phoneme/valid_X.npy',
-            label_filename='Data/Phoneme/valid_y.npy',
+            data_filename='../Data/Phoneme/valid_X.npy',
+            label_filename='../Data/Phoneme/valid_y.npy',
             transform=None
         ), 
         batch_size=batch_size, 
@@ -39,12 +40,12 @@ def get_data(batch_size=32, transform=None):
 
     return train_loader, val_loader
 
-def objective(trial: optuna.trial.Trial, patch_class="sequential1d") -> float:
+def objective(trial: optuna.trial.Trial, patch_class) -> float:
     num_classes = 39
     padded_length = 220
-    batch_size = 32
+    batch_size = 128
     transform = None
-    epochs = 100
+    epochs = 1000
     p_dropout = 0.5
 
     # Generate the model
@@ -54,30 +55,29 @@ def objective(trial: optuna.trial.Trial, patch_class="sequential1d") -> float:
         padded_length=padded_length,
         p_dropout=p_dropout,
         lr = trial.suggest_float("lr", 1e-4, 1e-2, log=True),
-        num_blocks=trial.suggest_int("num_blocks", 1, 8),
-        patch_size=trial.suggest_int("patch_size", 5, 40),
-        hidden_dim=trial.suggest_int("hidden_dim", 16, 264),
-        tokens_mlp_dim=trial.suggest_int("tokens_mlp_dim", 16, 264),
-        channels_mlp_dim=trial.suggest_int("channels_mlp_dim", 16, 264)
+        num_blocks=trial.suggest_int("num_blocks", 1, 10),
+        patch_size=trial.suggest_categorical("patch_size", [2, 4, 5, 10, 11, 20, 22, 44, 55, 110]),
+        hidden_dim=trial.suggest_int("hidden_dim", 16, 2048),
+        tokens_mlp_dim=trial.suggest_int("tokens_mlp_dim", 16, 2048),
+        channels_mlp_dim=trial.suggest_int("channels_mlp_dim", 16, 2048)
     )
 
     # Generate the dataloaders
     train_loader, valid_loader = get_data(batch_size=batch_size, transform=transform)
 
     # Train
-    callbacks = [EarlyStopping(monitor="val_loss", patience=10, mode="min")]
+    callbacks = [EarlyStopping(monitor="val_loss", patience=25, mode="min")]
 
-    trainer = pl.Trainer(
+    trainer = Trainer(
         max_epochs=epochs,
         accelerator="auto",
-        devices=1
+        callbacks=callbacks
     )
     
     trainer.fit(
         model=model, 
         train_dataloaders=train_loader,
-        val_dataloaders=valid_loader,
-        callbacks=callbacks
+        val_dataloaders=valid_loader
     )
 
     return trainer.callback_metrics["val_loss"].item()
@@ -90,8 +90,9 @@ if __name__ == "__main__":
         print(f"\n \n \n Optimizing for patch class: {patch_class}")
 
         # Create optuna study
+        objective = partial(objective, patch_class=patch_class)
         study = optuna.create_study(direction="minimize")
-        study.optimize(objective(patch_class=patch_class), n_trials=100, timeout=600)
+        study.optimize(objective, n_trials=200, timeout=(16*60*60))
 
         print("Number of finished trials: {}".format(len(study.trials)))
 
