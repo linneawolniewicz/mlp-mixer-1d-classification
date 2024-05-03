@@ -5,7 +5,6 @@ from data_utils import PhonemeDataset
 from mlp_mixer import MLPMixer
 
 import optuna
-from optuna.trial import TrialState
 import numpy as np
 import torch 
 from torch.utils.data import DataLoader
@@ -66,6 +65,8 @@ def objective(trial: optuna.trial.Trial, patch_class="sequential1d") -> float:
     train_loader, valid_loader = get_data(batch_size=batch_size, transform=transform)
 
     # Train
+    callbacks = [EarlyStopping(monitor="val_loss", patience=10, mode="min")]
+
     trainer = pl.Trainer(
         max_epochs=epochs,
         accelerator="auto",
@@ -75,7 +76,8 @@ def objective(trial: optuna.trial.Trial, patch_class="sequential1d") -> float:
     trainer.fit(
         model=model, 
         train_dataloaders=train_loader,
-        val_dataloaders=valid_loader
+        val_dataloaders=valid_loader,
+        callbacks=callbacks
     )
 
     return trainer.callback_metrics["val_loss"].item()
