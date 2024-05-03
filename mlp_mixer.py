@@ -147,7 +147,8 @@ class MLPMixer(LightningModule):
                  optimizer='adam', 
                  scheduler='reducelronplateau', 
                  lr=1e-3, 
-                 momentum=0.9):
+                 momentum=0.9,
+                 p_dropout=0.5):
         super().__init__()
 
         self.loss = nn.CrossEntropyLoss()
@@ -171,6 +172,8 @@ class MLPMixer(LightningModule):
             nn.Linear(hidden_dim, num_classes)
         )
 
+        self.dropout = nn.Dropout(p_dropout)
+
     def forward(self, x):
         # create S non-overlapping image patches X \in SxC 
         # and project each patch into hidden dimension C
@@ -179,6 +182,7 @@ class MLPMixer(LightningModule):
         # takes in X \in SxC and outputs X' \in SxC
         for mixer_block in self.mixer_blocks:
             x = mixer_block(x)
+            x = self.dropout(x)
 
         x = self.layer_norm(x)
 
@@ -214,7 +218,7 @@ class MLPMixer(LightningModule):
         preds = self.forward(x)
 
         # Log the loss
-        loss = self.loss(preds, y.float())
+        loss = self.loss(preds, y)
         self.log("val_loss", loss, on_step=False, on_epoch=True, prog_bar=True)
 
         # Log the accuracy
@@ -235,7 +239,7 @@ class MLPMixer(LightningModule):
         preds = self.forward(x)
 
         # Log the loss
-        loss = self.loss(preds, y.float())
+        loss = self.loss(preds, y)
         self.log("test_loss", loss)
 
         # Log the accuracy
