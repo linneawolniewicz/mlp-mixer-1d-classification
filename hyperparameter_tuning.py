@@ -55,9 +55,9 @@ def objective(trial: optuna.trial.Trial, patch_class) -> float:
         padded_length=padded_length,
         p_dropout=p_dropout,
         lr = trial.suggest_float("lr", 1e-4, 1e-2, log=True),
-        num_blocks=trial.suggest_int("num_blocks", 1, 10),
+        num_blocks=trial.suggest_int("num_blocks", 1, 6),
         patch_size=trial.suggest_categorical("patch_size", [2, 4, 5, 10, 11, 20, 22, 44, 55, 110]),
-        hidden_dim=trial.suggest_int("hidden_dim", 16, 2048),
+        hidden_dim=trial.suggest_int("hidden_dim", 16, 1024),
         tokens_mlp_dim=trial.suggest_int("tokens_mlp_dim", 16, 2048),
         channels_mlp_dim=trial.suggest_int("channels_mlp_dim", 16, 2048)
     )
@@ -84,7 +84,7 @@ def objective(trial: optuna.trial.Trial, patch_class) -> float:
 
 
 if __name__ == "__main__":
-    patch_classes = ["sequential1d", "random1d", "cyclical1d"]
+    patch_classes = ["cyclical1d"] #["sequential1d", "random1d", "cyclical1d"]
 
     for patch_class in patch_classes:
         print(f"\n \n \n Optimizing for patch class: {patch_class}")

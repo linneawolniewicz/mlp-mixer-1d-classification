@@ -4,11 +4,10 @@
 
 #SBATCH --partition=koa # koa, sadow, gpu, shared, kill-shared, exclusive-long
 #SBATCH --account=koa
-##SBATCH --nodelist=gpu-0008
 
 #SBATCH --gres=gpu:1
 #SBATCH --cpus-per-task=8
-#SBATCH --mem=96gb ## max amount of memory per node you require
+#SBATCH --mem=156gb ## max amount of memory per node you require
 #SBATCH --time=14-00:00:00 ## time format is DD-HH:MM:SS, 3day max on kill-shared, 7day max on exclusive-long, 14day max on sadow, 30day max on koa
 
 #SBATCH --job-name=optuna_mlp_mixer
